@@ -1,0 +1,11 @@
+{
+  "name": "Sami's Daily Word",
+  "short_name": "Daily Word",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf9f2",
+  "theme_color": "#fdf9f2",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
