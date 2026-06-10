@@ -77,6 +77,11 @@
       <span id="checkLabel">Check my sentence</span>
       <span id="spinner" class="hidden material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
     </button>
+
+    <button id="continueBtn"
+      class="hidden mt-4 w-full h-12 rounded-full bg-success text-background font-body font-medium text-[15px] tracking-wide flex items-center justify-center gap-2 transition active:scale-[0.98]">
+      Continue
+    </button>
   </section>
 
   <!-- TODAY'S WORD -->
@@ -147,11 +152,7 @@
    if you don't want them. Keep the commas between blocks.
    ============================================================ */
 const WORDS = [
-  { word:"Candor", ipa:"/ˈkandə/", definition:"Honesty and frankness in what one says.",
-    example:"I appreciated the candor of her feedback, even when it stung.",
-    origin:"From Latin candor 'whiteness, sincerity'.",
-    didYouKnow:"" },
-  { word:"Taciturno", ipa:"", definition:"Callado y reservado; de pocas palabras. (Taciturn.)",
+{ word:"Taciturno", ipa:"", definition:"Callado y reservado; de pocas palabras. (Taciturn.)",
     example:"Estuvo taciturno toda la cena, perdido en sus pensamientos.",
     origin:"Del latín taciturnus, de tacere 'callar'.",
     didYouKnow:"" },
@@ -581,16 +582,24 @@ $("checkBtn").addEventListener("click", async () => {
     state.lastDate = today;
     saveState(state);
 
-    setTimeout(() => {
-      $("recallInput").value = "";
-      render(); // reveals the new word of the day, hides the recall card
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 1400);
+    $("checkBtn").classList.add("hidden");
+    $("continueBtn").classList.remove("hidden");
   } else {
     fb.className = "mt-4 p-4 rounded-lg text-[15px] leading-relaxed bg-[#fbe4e2] text-[#8a2b26]";
     $("checkBtn").disabled = false;
     $("checkLabel").textContent = "Try again";
   }
+});
+
+$("continueBtn").addEventListener("click", () => {
+  $("recallInput").value = "";
+  $("continueBtn").classList.add("hidden");
+  $("checkBtn").classList.remove("hidden");
+  $("checkBtn").disabled = false;
+  $("checkLabel").textContent = "Check my sentence";
+  $("feedback").classList.add("hidden");
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 // In preview only, start partway in so the sentence-checker can be tried right away.
