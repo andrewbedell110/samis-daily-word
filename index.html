@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
+<meta name="theme-color" content="#fdf9f2"/>
+<title>Sami's Daily Word</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: { extend: {
+      colors: {
+        "secondary": "#5f5e5e", "surface-container-highest": "#e6e2db", "surface-bright": "#fdf9f2",
+        "on-background": "#1c1c17", "background": "#fdf9f2", "outline": "#747875",
+        "outline-variant": "#c4c7c4", "on-surface": "#1c1c17", "tertiary": "#6a5c47",
+        "surface-container-low": "#f7f3ec", "surface-container": "#f2ede6", "error": "#ba1a1a",
+        "success": "#3f6b3f"
+      },
+      borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+      fontFamily: { display: ["Playfair Display"], body: ["Inter"] },
+      fontSize: {
+        "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "display-mobile": ["40px", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "headline": ["24px", { lineHeight: "1.4", fontWeight: "600" }],
+        "body-lg": ["18px", { lineHeight: "1.6", letterSpacing: "-0.01em", fontWeight: "400" }],
+        "label-caps": ["12px", { lineHeight: "1.0", letterSpacing: "0.1em", fontWeight: "600" }]
+      }
+    } }
+  };
+</script>
+<style>
+  body { background-color:#fdf9f2; color:#1c1c17; -webkit-font-smoothing:antialiased; min-height:100dvh; }
+  .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24; }
+  .tight { letter-spacing:-0.03em; }
+  .fade-in { animation: fade 0.7s ease both; }
+  @keyframes fade { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:translateY(0);} }
+  .locked { filter: blur(7px); opacity:0.55; pointer-events:none; user-select:none; }
+  textarea { resize:none; }
+  @media (prefers-reduced-motion: reduce) { .fade-in { animation:none; } }
+</style>
+</head>
+<body class="font-body">
+
+<!-- Header: title + streak -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-16 bg-background/90 backdrop-blur border-b border-surface-container-highest">
+  <span class="w-9"></span>
+  <h1 class="font-display text-[20px] font-semibold tracking-wide text-on-background">Sami's Daily Word</h1>
+  <div id="streakChip" class="flex items-center gap-1 text-on-background" title="Day streak">
+    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;color:#c0703a">local_fire_department</span>
+    <span id="streakNum" class="font-body text-[15px] font-semibold">0</span>
+  </div>
+</header>
+
+<main class="pt-24 pb-16 px-5 max-w-xl mx-auto flex flex-col">
+
+  <!-- RECALL CARD (shown on a new day, before today's word unlocks) -->
+  <section id="recallCard" class="hidden fade-in mb-12 p-6 bg-surface-container-low rounded-xl border border-surface-container-highest">
+    <p class="font-label-caps text-label-caps text-outline uppercase mb-3">Yesterday's word — use it to unlock today</p>
+    <h2 id="recallWord" class="font-display text-[34px] font-bold tight text-on-background mb-1">—</h2>
+    <p id="recallHint" class="font-body text-[14px] text-outline italic mb-5">Write a sentence that uses it correctly.</p>
+
+    <textarea id="recallInput" rows="3" placeholder="Use it in a sentence of your own…"
+      class="w-full bg-surface-bright border border-outline-variant rounded-lg p-4 text-body-lg text-on-surface placeholder:text-outline/70 focus:border-on-background focus:ring-0"></textarea>
+
+    <div id="feedback" class="hidden mt-4 p-4 rounded-lg text-[15px] leading-relaxed"></div>
+
+    <button id="checkBtn"
+      class="mt-5 w-full h-12 rounded-full bg-on-background text-background font-body font-medium text-[15px] tracking-wide flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-50">
+      <span id="checkLabel">Check my sentence</span>
+      <span id="spinner" class="hidden material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+    </button>
+  </section>
+
+  <!-- TODAY'S WORD -->
+  <section id="wordSection" class="relative">
+    <div id="lockOverlay" class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6">
+      <span class="material-symbols-outlined text-[40px] text-outline mb-3">lock</span>
+      <p class="font-body text-[15px] text-secondary max-w-xs">Use yesterday's word above to reveal today's word.</p>
+    </div>
+
+    <div id="wordBody">
+      <p id="dateLabel" class="font-label-caps text-label-caps text-outline uppercase mb-6">—</p>
+
+      <div class="flex items-end gap-4 mb-3">
+        <h2 id="word" class="font-display text-display-mobile sm:text-display-lg text-on-background tight">—</h2>
+      </div>
+      <div class="flex items-center gap-3 mb-10">
+        <span id="ipa" class="font-body text-body-lg text-outline italic"></span>
+        <button id="speakBtn" aria-label="Hear pronunciation"
+          class="w-9 h-9 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition">
+          <span class="material-symbols-outlined text-[18px]">volume_up</span>
+        </button>
+      </div>
+
+      <div class="border-l-2 border-surface-container-highest pl-6 py-1 mb-12">
+        <p class="font-label-caps text-label-caps text-outline uppercase mb-3">Definition</p>
+        <p id="definition" class="font-headline text-headline text-on-surface"></p>
+      </div>
+
+      <div class="mb-12">
+        <p class="font-label-caps text-label-caps text-outline uppercase mb-4">Example</p>
+        <blockquote id="example" class="font-body text-body-lg text-secondary italic leading-loose"></blockquote>
+      </div>
+
+      <div id="originWrap" class="mb-10">
+        <p class="font-label-caps text-label-caps text-outline uppercase mb-3">Origin</p>
+        <p id="origin" class="font-body text-[15px] text-secondary leading-relaxed"></p>
+      </div>
+
+      <div id="didYouKnowWrap" class="p-6 bg-surface-container-low rounded-xl">
+        <p class="font-label-caps text-label-caps text-tertiary uppercase mb-3">Did you know?</p>
+        <p id="didYouKnow" class="font-body text-body-lg text-on-surface italic leading-relaxed"></p>
+      </div>
+
+      <p id="doneNote" class="hidden mt-10 text-center font-body text-[14px] text-outline">
+        ✓ All done for today. A new word is waiting for you tomorrow.
+      </p>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   YOUR WORD LIST
+   To add a word, copy one { ... } block, paste it at the end of
+   the list (before the closing ]), and fill in your own text.
+   "ipa", "origin", and "didYouKnow" are optional — leave them as ""
+   if you don't want them. Keep the commas between blocks.
+   ============================================================ */
+const WORDS = [
+  { word:"Ephemeral", ipa:"/əˈfem(ə)rəl/", definition:"Lasting for a very short time; fleeting.",
+    example:"The golden light of the sunset was ephemeral, gone behind the skyline in a few heartbeats.",
+    origin:"Late 16th century: from Greek ephēmeros, from epi- ‘upon’ + hēmera ‘day’.",
+    didYouKnow:"In old medical texts it described a fever that lasted only a single day." },
+  { word:"Petrichor", ipa:"/ˈpɛtrɪkɔːr/", definition:"The pleasant, earthy smell that follows rain falling on dry ground.",
+    example:"After the first storm of spring, the whole garden was thick with petrichor.",
+    origin:"Coined in 1964 from Greek petra ‘stone’ + ichor, the fluid said to flow in the veins of the gods.",
+    didYouKnow:"The scent comes partly from oils plants release and a compound made by soil bacteria called geosmin." },
+  { word:"Susurrus", ipa:"/suːˈsʌrəs/", definition:"A soft murmuring or rustling sound; a whisper.",
+    example:"A susurrus of wind moved through the wheat, as if the field were sharing a secret.",
+    origin:"From Latin susurrus ‘a humming, muttering’.",
+    didYouKnow:"The word sounds like the thing it names — a small piece of onomatopoeia." },
+  { word:"Mellifluous", ipa:"/məˈlɪflʊəs/", definition:"Sweet or smooth, especially of a sound or a voice.",
+    example:"Her mellifluous voice made even the weather report sound like poetry.",
+    origin:"From Latin mel ‘honey’ + fluere ‘to flow’ — literally ‘flowing with honey’.",
+    didYouKnow:"" },
+  { word:"Limerence", ipa:"/ˈlɪmərəns/", definition:"The state of being infatuated, with an overwhelming longing for one's feelings to be returned.",
+    example:"Those first dizzy weeks were pure limerence, when even his messy handwriting felt charming.",
+    origin:"Coined by psychologist Dorothy Tennov in 1979 — an invented word with no older roots.",
+    didYouKnow:"Tennov made the word up because no existing term captured early, obsessive romantic love." },
+  { word:"Quixotic", ipa:"/kwɪkˈsɒtɪk/", definition:"Extremely idealistic and romantic, but unrealistic or impractical.",
+    example:"Saving every stray cat in the city was a quixotic plan, but she loved him for trying.",
+    origin:"From Don Quixote, the hero of Cervantes's 1605 novel who charged at windmills.",
+    didYouKnow:"" },
+  { word:"Serendipity", ipa:"/ˌsɛrənˈdɪpɪti/", definition:"The occurrence of happy or lucky events by chance.",
+    example:"Finding that little bookshop in the rain was pure serendipity.",
+    origin:"Coined by Horace Walpole in 1754, from the Persian tale ‘The Three Princes of Serendip’.",
+    didYouKnow:"Serendip is an old name for the island of Sri Lanka." },
+  { word:"Halcyon", ipa:"/ˈhalsɪən/", definition:"Denoting a past time that was idyllically happy and peaceful.",
+    example:"They talked for hours about the halcyon days of their first tiny apartment.",
+    origin:"From Greek: the halcyon was a mythical bird believed to calm the sea while it nested.",
+    didYouKnow:"" },
+  { word:"Perspicacious", ipa:"/ˌpəːspɪˈkeɪʃəs/", definition:"Having a quick, keen insight into things.",
+    example:"One perspicacious glance and she knew exactly why he was nervous.",
+    origin:"From Latin perspicax ‘sharp-sighted’.",
+    didYouKnow:"" },
+  { word:"Lugubrious", ipa:"/lʊˈɡuːbrɪəs/", definition:"Looking or sounding sad and dismal.",
+    example:"The old hound greeted every guest with the same lugubrious stare.",
+    origin:"From Latin lugubris, from lugere ‘to mourn’.",
+    didYouKnow:"" },
+  { word:"Obstreperous", ipa:"/əbˈstrɛp(ə)rəs/", definition:"Noisy and difficult to control.",
+    example:"The toddler grew obstreperous the moment the cake left the table.",
+    origin:"From Latin obstreperus, from ob- ‘against’ + strepere ‘to make a noise’.",
+    didYouKnow:"" },
+  { word:"Defenestration", ipa:"/ˌdiːfɛnɪˈstreɪʃ(ə)n/", definition:"The act of throwing someone or something out of a window.",
+    example:"He threatened the defenestration of the printer after its third paper jam.",
+    origin:"From Latin de- ‘down from’ + fenestra ‘window’.",
+    didYouKnow:"The 1618 Defenestration of Prague — two officials thrown from a window — helped spark the Thirty Years' War." },
+  { word:"Ineffable", ipa:"/ɪnˈɛfəb(ə)l/", definition:"Too great or extreme to be expressed in words.",
+    example:"Holding their newborn, he felt an ineffable mix of terror and joy.",
+    origin:"From Latin ineffabilis, from in- ‘not’ + effari ‘to utter’.",
+    didYouKnow:"" },
+  { word:"Sesquipedalian", ipa:"/ˌsɛskwɪpɪˈdeɪlɪən/", definition:"(Of a word) very long; (of a person) given to using long words.",
+    example:"His sesquipedalian texts sent her straight to the dictionary.",
+    origin:"From Latin sesquipedalis ‘a foot and a half long’, used as a joke by the poet Horace.",
+    didYouKnow:"The word is itself a perfect example of what it describes." },
+  { word:"Saudade", ipa:"/sɔːˈdɑːdə/", definition:"A deep, nostalgic longing for someone or something absent and loved.",
+    example:"Every time that song played, a wave of saudade for her grandmother washed over her.",
+    origin:"Portuguese, traced back to Latin solitas ‘solitude’.",
+    didYouKnow:"It is often called untranslatable — a feeling treated as its own thing in Portuguese culture." },
+  { word:"Nebulous", ipa:"/ˈnɛbjʊləs/", definition:"In the form of a cloud or haze; vague and ill-defined.",
+    example:"His plans for after graduation stayed reassuringly nebulous.",
+    origin:"From Latin nebulosus, from nebula ‘mist, cloud’.",
+    didYouKnow:"" },
+  { word:"Ebullient", ipa:"/ɪˈbʌlɪənt/", definition:"Cheerful and full of energy.",
+    example:"She came back from the trip tanned, rested, and absolutely ebullient.",
+    origin:"From Latin ebullire ‘to boil up’, from e- ‘out’ + bullire ‘to boil’.",
+    didYouKnow:"The same root gives us ‘boil’ — an ebullient person is almost literally bubbling over." },
+  { word:"Sonorous", ipa:"/ˈsɒn(ə)rəs/", definition:"(Of a sound) deep, full, and rich.",
+    example:"The old clock struck the hour in a slow, sonorous tone.",
+    origin:"From Latin sonorus, from sonor ‘sound’.",
+    didYouKnow:"" },
+  { word:"Apricity", ipa:"/əˈprɪsɪti/", definition:"The warmth of the sun in winter.",
+    example:"They lingered on the bench, soaking up the apricity of the January afternoon.",
+    origin:"A rare English word recorded in 1623, from Latin apricus ‘exposed to the sun’.",
+    didYouKnow:"It nearly vanished from English — you'll struggle to find it in most modern dictionaries." },
+  { word:"Gossamer", ipa:"/ˈɡɒsəmə/", definition:"Something extremely light, thin, and delicate.",
+    example:"A gossamer veil of fog hung over the lake at dawn.",
+    origin:"Middle English, perhaps from ‘goose summer’ — late autumn, when fine cobwebs drift in the air.",
+    didYouKnow:"" },
+  { word:"Sempiternal", ipa:"/ˌsɛmpɪˈtəːn(ə)l/", definition:"Eternal and unchanging; everlasting.",
+    example:"The mountains stood in sempiternal silence above the sleeping town.",
+    origin:"From Latin sempiternus, from semper ‘always’.",
+    didYouKnow:"" },
+  { word:"Numinous", ipa:"/ˈnjuːmɪnəs/", definition:"Having a strong spiritual quality; suggesting the presence of something divine.",
+    example:"There was something numinous about the empty cathedral at midnight.",
+    origin:"From Latin numen ‘divine will, divine presence’; popularized by theologian Rudolf Otto in 1917.",
+    didYouKnow:"" },
+  { word:"Verdant", ipa:"/ˈvəːd(ə)nt/", definition:"Green with growing plants; lush.",
+    example:"After the rains, the once-dusty valley turned verdant overnight.",
+    origin:"From Old French, ultimately from Latin viridis ‘green’.",
+    didYouKnow:"" },
+  { word:"Crepuscular", ipa:"/krɪˈpʌskjʊlə/", definition:"Relating to or resembling twilight.",
+    example:"Deer are crepuscular, slipping out to graze in the half-light of dawn and dusk.",
+    origin:"From Latin crepusculum ‘twilight’.",
+    didYouKnow:"Biologists use it for animals most active at dawn and dusk — neither nocturnal nor diurnal." },
+  { word:"Pellucid", ipa:"/pɪˈluːsɪd/", definition:"Translucently clear; very easy to understand.",
+    example:"Her writing was pellucid — not a single sentence you had to read twice.",
+    origin:"From Latin pellucidus, from per- ‘through’ + lucere ‘to shine’.",
+    didYouKnow:"" }
+];
+
+/* ============================================================
+   APP LOGIC — you don't need to touch anything below here.
+   ============================================================ */
+const STORAGE_KEY = "samiDailyWord";
+
+// Detect "preview mode": inside the Claude chat, device storage is blocked.
+// On a real phone this stays false and the app behaves completely normally.
+let previewMode = false;
+try { localStorage.setItem("__t", "1"); localStorage.removeItem("__t"); } catch (e) { previewMode = true; }
+
+// Save/load progress. Uses the device's storage; falls back to memory if blocked.
+let memoryState = null;
+function loadState() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+  catch (e) { return memoryState; }
+}
+function saveState(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+  catch (e) { memoryState = s; }
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function prettyDate() {
+  return new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
+}
+function dayGap(fromStr, toStr) {
+  const a = new Date(fromStr + "T00:00:00"), b = new Date(toStr + "T00:00:00");
+  return Math.round((b - a) / 86400000);
+}
+
+const $ = (id) => document.getElementById(id);
+
+function renderWord(w) {
+  $("word").textContent = w.word;
+  $("ipa").textContent = w.ipa || "";
+  $("definition").textContent = w.definition;
+  $("example").innerHTML = '"' + w.example.replace(new RegExp("("+w.word+")","ig"),
+    '<span class="text-on-background font-semibold not-italic">$1</span>') + '"';
+  if (w.origin) { $("originWrap").classList.remove("hidden"); $("origin").textContent = w.origin; }
+  else $("originWrap").classList.add("hidden");
+  if (w.didYouKnow) { $("didYouKnowWrap").classList.remove("hidden"); $("didYouKnow").textContent = w.didYouKnow; }
+  else $("didYouKnowWrap").classList.add("hidden");
+}
+
+let state, recallTarget;
+
+function render() {
+  state = loadState();
+  const today = todayStr();
+  $("dateLabel").textContent = prettyDate();
+
+  if (!state) {
+    // First ever visit
+    state = { index: 0, streak: 1, lastDate: today };
+    saveState(state);
+    $("streakNum").textContent = state.streak;
+    showWord(WORDS[state.index], false);
+    $("recallCard").classList.add("hidden");
+    $("doneNote").classList.remove("hidden");
+    return;
+  }
+
+  $("streakNum").textContent = state.streak;
+
+  if (state.lastDate === today) {
+    // Already played today
+    showWord(WORDS[state.index], false);
+    $("recallCard").classList.add("hidden");
+    $("doneNote").classList.remove("hidden");
+  } else {
+    // New day: must use the last word before unlocking the next
+    recallTarget = WORDS[state.index];
+    $("recallCard").classList.remove("hidden");
+    $("recallWord").textContent = recallTarget.word;
+    $("doneNote").classList.add("hidden");
+    showWord(WORDS[(state.index + 1) % WORDS.length], true); // locked preview of tomorrow's word
+  }
+}
+
+function showWord(w, locked) {
+  renderWord(w);
+  if (locked) { $("wordBody").classList.add("locked"); $("lockOverlay").classList.remove("hidden"); }
+  else { $("wordBody").classList.remove("locked"); $("lockOverlay").classList.add("hidden"); }
+}
+
+// Pronounce the word out loud (built into the phone's browser).
+$("speakBtn").addEventListener("click", () => {
+  try {
+    const u = new SpeechSynthesisUtterance($("word").textContent);
+    u.rate = 0.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) {}
+});
+
+// --- The AI judge ---
+function buildPrompt(word, definition, sentence) {
+  return {
+    system: `You are a warm, encouraging vocabulary tutor. Decide whether the user used the target word correctly and meaningfully in their own sentence. The word is "${word}"${definition ? ` (meaning: ${definition})` : ""}. Count it correct if the sentence uses the word in a way that fits its real meaning. Allow any grammatical form of the word, and ignore minor spelling or punctuation slips. Reply with ONLY a JSON object and nothing else, exactly like {"correct": true, "feedback": "..."}. If correct, congratulate warmly in one short sentence. If incorrect, gently explain what's off and give a small hint — but do NOT write a correct example sentence for them. Keep feedback under 40 words.`,
+    user: `Sentence: ${sentence}`
+  };
+}
+
+async function judge(word, definition, sentence) {
+  const p = buildPrompt(word, definition, sentence);
+
+  // 1) Real app: ask our own private server (keeps the API key safe).
+  try {
+    const r = await fetch("/api/judge", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ word, definition, sentence })
+    });
+    if (r.ok) return await r.json();
+  } catch (e) { /* fall through to preview mode */ }
+
+  // 2) Preview mode (inside the Claude chat only): ask the AI directly, no key needed.
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514", max_tokens: 1000,
+        system: p.system, messages: [{ role: "user", content: p.user }]
+      })
+    });
+    const data = await r.json();
+    const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
+    return JSON.parse(text.replace(/```json|```/g, "").trim());
+  } catch (e) {
+    return { correct: false, feedback: "I couldn't reach the judge right now. Please try again in a moment." };
+  }
+}
+
+$("checkBtn").addEventListener("click", async () => {
+  const sentence = $("recallInput").value.trim();
+  if (sentence.length < 3) { $("recallInput").focus(); return; }
+
+  $("checkBtn").disabled = true;
+  $("checkLabel").textContent = "Checking…";
+  $("spinner").classList.remove("hidden");
+  $("feedback").classList.add("hidden");
+
+  const verdict = await judge(recallTarget.word, recallTarget.definition, sentence);
+
+  $("spinner").classList.add("hidden");
+  const fb = $("feedback");
+  fb.classList.remove("hidden");
+  fb.textContent = verdict.feedback || (verdict.correct ? "Nicely done!" : "Not quite — give it another go.");
+
+  if (verdict.correct) {
+    fb.className = "mt-4 p-4 rounded-lg text-[15px] leading-relaxed bg-[#e7efe2] text-[#2f5430]";
+    $("checkLabel").textContent = "Correct!";
+    // Advance: streak up if it's the very next day, otherwise restart the streak at 1.
+    const today = todayStr();
+    const gap = dayGap(state.lastDate, today);
+    state.streak = (gap === 1) ? state.streak + 1 : 1;
+    state.index = (state.index + 1) % WORDS.length;
+    state.lastDate = today;
+    saveState(state);
+
+    setTimeout(() => {
+      $("recallInput").value = "";
+      render(); // reveals the new word of the day, hides the recall card
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 1400);
+  } else {
+    fb.className = "mt-4 p-4 rounded-lg text-[15px] leading-relaxed bg-[#fbe4e2] text-[#8a2b26]";
+    $("checkBtn").disabled = false;
+    $("checkLabel").textContent = "Try again";
+  }
+});
+
+// In preview only, start partway in so the sentence-checker can be tried right away.
+if (previewMode && !loadState()) {
+  const y = new Date(Date.now() - 86400000);
+  memoryState = {
+    index: 0, streak: 3,
+    lastDate: y.getFullYear() + "-" + String(y.getMonth() + 1).padStart(2, "0") + "-" + String(y.getDate()).padStart(2, "0")
+  };
+}
+render();
+</script>
+</body>
+</html>
